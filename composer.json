@@ -1,5 +1,5 @@
 {
-    "name": "starkinfra/sdk",
+    "name": "robertol/sdk",
     "version": "0.13.1",
     "type": "library",
     "description": "SDK to facilitate PHP integrations with the Stark Infra API",

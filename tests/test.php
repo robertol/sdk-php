@@ -4,6 +4,8 @@ namespace Test;
 require_once('vendor/autoload.php');
 include_once("tests/utils/rule.php");
 include_once("tests/utils/dynamicBrcode.php");
+include_once("tests/utils/ledger.php");
+include_once("tests/utils/ledgerTransaction.php");
 
 
 $projectId = $_SERVER["SANDBOX_INFRA_ID"]; # "9999999999999999",
@@ -22,6 +24,10 @@ $project = new \StarkInfra\Project([
 echo "\n\nStarting tests\n";
 
 include_once("brcodePreview.php");
+include_once("businessAttachment.php");
+include_once("businessAttachmentLog.php");
+include_once("businessIdentity.php");
+include_once("businessIdentityLog.php");
 include_once("cardMethod.php");
 include_once("creditHolmes.php");
 include_once("creditHolmesLog.php");
@@ -51,8 +57,9 @@ include_once("issuingPurchase.php");
 include_once("issuingPurchaseLog.php");
 include_once("issuingRestock.php"); 
 include_once("issuingRestockLog.php");
-include_once("issuingStock.php"); 
+include_once("issuingStock.php");
 include_once("issuingStockLog.php");
+include_once("issuingStockRule.php");
 include_once("issuingToken.php");
 include_once("issuingTokenActivation.php");
 include_once("issuingTokenDesign.php");
@@ -60,6 +67,9 @@ include_once("issuingTokenLog.php");
 include_once("issuingTokenRequest.php");
 include_once("issuingTransaction.php");
 include_once("issuingWithdrawal.php");
+include_once("ledger.php");
+include_once("ledgerLog.php");
+include_once("ledgerTransaction.php");
 include_once("key.php");
 include_once("merchantCategory.php");
 include_once("merchantCountry.php");
@@ -74,10 +84,16 @@ include_once("pixDisputeLog.php");
 include_once("pixDomain.php");
 include_once("pixInfraction.php"); 
 include_once("pixInfractionLog.php");
-include_once("pixFraud.php"); 
-include_once("pixUser.php"); 
+include_once("pixFraud.php");
+include_once("pixFraudLog.php");
+include_once("pixKeyHolmes.php");
+include_once("pixUser.php");
 include_once("pixKey.php");
 include_once("pixKeyLog.php");
+include_once("pixPullRequest.php");
+include_once("pixPullRequestLog.php");
+include_once("pixPullSubscription.php");
+include_once("pixPullSubscriptionLog.php");
 include_once("pixRequest.php");
 include_once("pixRequestLog.php");
 include_once("pixReversal.php"); 
@@ -90,5 +106,7 @@ include_once("individualAccountRequest.php");
 include_once("individualAccountRequestLog.php");
 include_once("individualAccountAttachment.php");
 include_once("individualAccountAttachmentLog.php");
+include_once("pixInternalTransactionReport.php");
+include_once("pixInternalTransactionReportLog.php");
 
 echo "\n\nAll tests concluded\n\n";

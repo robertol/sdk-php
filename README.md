@@ -29,6 +29,7 @@ This SDK version is compatible with the Stark Infra API v2.
         - [EmbossingKit](#query-issuingembossingkits): View your current embossing kits
         - [Stock](#query-issuingstocks): View your current stock of a certain IssuingDesign linked to an Embosser on the workspace
         - [Restock](#create-issuingrestocks): Create restock orders of a specific IssuingStock object
+        - [StockRule](#create-issuingstockrules): Create notification rules attached to an IssuingStock
         - [EmbossingRequest](#create-issuingembossingrequests): Create embossing requests
         - [TokenRequest](#create-an-issuingtokenrequest): Generate the payload to create the token
         - [Token](#process-token-authorizations): Authorize and manage your tokens
@@ -58,6 +59,13 @@ This SDK version is compatible with the Stark Infra API v2.
         - [DynamicBrcode](#create-dynamicbrcodes): Create dynamic Pix BR codes
         - [BrcodePreview](#create-brcodepreviews): Read data from BR Codes before paying them
         - [PixDispute](#create-pixdisputes): Create Pix Disputes
+        - [PixPullSubscription](#create-pixpullsubscriptions): Set up recurring Pix debit authorizations
+        - [PixPullRequest](#create-pixpullrequests): Trigger automatic Pix debits against a subscription
+        - [PixKeyHolmes](#create-pixkeyholmes): Investigate the registration status of a Pix Key
+        - [PixInternalTransactionReport](#create-a-pixinternaltransactionreport): Report internal transactions to the Central Bank
+    - [Ledger](#ledger)
+        - [Ledger](#create-ledgers): Track the balance of a given amount
+        - [LedgerTransaction](#create-ledgertransactions): Move amounts in and out of a Ledger
     - [Lending](#lending)
         - [CreditNote](#create-creditnotes): Create credit notes
         - [CreditPreview](#create-creditpreviews): Create credit previews
@@ -65,6 +73,8 @@ This SDK version is compatible with the Stark Infra API v2.
     - [Identity](#identity)
         - [IndividualIdentity](#create-individualidentities): Create individual identities
         - [IndividualDocument](#create-individualdocuments): Create individual documents
+        - [BusinessIdentity](#create-businessidentities): Create business identities
+        - [BusinessAttachment](#create-businessattachments): Attach documents to a business identity
         - [IndividualAccountRequest](#create-individualaccountrequests): Open an individual Stark Infra account
         - [IndividualAccountAttachment](#create-individualaccountattachments): Attach documents to an individual account request
     - [Webhook](#webhook):
@@ -739,6 +749,85 @@ $log = IssuingRestock\Log::get("5155165527080960");
 print_r($log);
 ```
 
+### Create IssuingStockRules
+
+You can create notification rules attached to a specific IssuingStock. When the linked stock balance reaches the minimumBalance, the listed recipients are notified.
+
+```php
+use StarkInfra\IssuingStockRule;
+
+$rules = IssuingStockRule::create([
+    new IssuingStockRule([
+        "minimumBalance" => 1000,
+        "stockId" => "5136459887542272",
+        "tags" => ["card", "corporate"],
+        "emails" => ["john.doe@enterprise.com"],
+        "phones" => ["+55 (11) 91234 5678"],
+    ]),
+]);
+
+foreach ($rules as $rule) {
+    print_r($rule);
+}
+```
+
+**Note**: Instead of using IssuingStockRule objects, you can also pass each element in dictionary format
+
+### Query IssuingStockRules
+
+You can query multiple IssuingStockRule objects according to filters.
+
+```php
+use StarkInfra\IssuingStockRule;
+
+$rules = IssuingStockRule::query([
+    "limit" => 1,
+    "status" => ["active"],
+    "stockIds" => ["5136459887542272"],
+    "tags" => ["card", "corporate"],
+]);
+
+foreach ($rules as $rule) {
+    print_r($rule);
+}
+```
+
+### Get an IssuingStockRule
+
+After its creation, information on an IssuingStockRule may be retrieved by its id.
+
+```php
+use StarkInfra\IssuingStockRule;
+
+$rule = IssuingStockRule::get("5664445921492992");
+
+print_r($rule);
+```
+
+### Update an IssuingStockRule
+
+You can update a specific IssuingStockRule by its id.
+
+```php
+use StarkInfra\IssuingStockRule;
+
+$rule = IssuingStockRule::update("5664445921492992", ["minimumBalance" => 20000]);
+
+print_r($rule);
+```
+
+### Cancel an IssuingStockRule
+
+You can also cancel a specific IssuingStockRule by its id.
+
+```php
+use StarkInfra\IssuingStockRule;
+
+$rule = IssuingStockRule::cancel("5664445921492992");
+
+print_r($rule);
+```
+
 ### Create IssuingEmbossingRequests
 
 You can create a request to emboss a physical card.
@@ -1406,6 +1495,8 @@ $requests = PixRequest::create([
         "receiverName" => "Daenerys Targaryen Stormborn",
         "receiverTaxId" => "012.345.678-90",
         "endToEndId" => EndToEndId::create("20018183"),
+        "reason" => "subscriptionFlaw",
+        "priority" => "low",
     ]),
     new PixRequest([
         "amount" => 200,
@@ -1422,6 +1513,8 @@ $requests = PixRequest::create([
         "receiverName" => "Daenerys Targaryen Stormborn",
         "receiverTaxId" => "012.345.678-90",
         "endToEndId" => EndToEndId::create("20018183"),
+        "reason" => "subscriptionFlaw",
+        "priority" => "low",
     ]);
 ]);
 
@@ -2167,6 +2260,36 @@ $fraud = PixFraud::cancel("5155165527080960");
 print_r($fraud);
 ```
 
+### Query PixFraud logs
+
+You can query PixFraud Logs to better understand PixFraud life cycles.
+
+```php
+use StarkInfra\PixFraud;
+
+$logs = PixFraud\Log::query([
+    "limit" => 10,
+    "types" => "registered",
+    "after" => "2020-04-30",
+]);
+
+foreach($logs as $log){
+    print_r($log->id);
+}
+```
+
+### Get a PixFraud log
+
+You can also get a specific log by its id.
+
+```php
+use StarkInfra\PixFraud;
+
+$log = PixFraud\Log::get("5155165527080960");
+
+print_r($log);
+```
+
 ### Get a PixUser
 
 You can get a specific fraud statistics of a user with his taxId.
@@ -2638,6 +2761,520 @@ $log = PixDispute\Log::get("5155165527080960");
 print_r($log);
 ```
 
+### Create PixPullSubscriptions
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$subscriptions = PixPullSubscription::create([
+    new PixPullSubscription([
+        "bacenId" => "RR2017032900000000000000003",
+        "externalId" => "my-subscription-001",
+        "installmentStart" => "2026-04-01T12:00:00+00:00",
+        "interval" => "month",
+        "receiverName" => "Edward Stark",
+        "receiverTaxId" => "20.018.183/0001-80",
+        "senderAccountNumber" => "876543-2",
+        "senderBankCode" => "20018183",
+        "senderBranchCode" => "1357-9",
+        "senderTaxId" => "01234567890",
+        "type" => "push",
+        "amount" => 11234,
+        "description" => "Monthly subscription",
+        "tags" => ["employees", "monthly"],
+    ]),
+]);
+
+foreach ($subscriptions as $subscription) {
+    print_r($subscription);
+}
+```
+
+### Query PixPullSubscriptions
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$subscriptions = PixPullSubscription::query([
+    "limit" => 10,
+    "after" => "2026-01-01",
+    "before" => "2026-04-30",
+    "status" => ["active"],
+    "tags" => ["monthly"],
+]);
+
+foreach ($subscriptions as $subscription) {
+    print_r($subscription);
+}
+```
+
+### Get a PixPullSubscription
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$subscription = PixPullSubscription::get("5656565656565656");
+print_r($subscription);
+```
+
+### Update a PixPullSubscription
+
+When patching `status` to `"confirmed"`, `senderCityCode` MUST be present.
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$subscription = PixPullSubscription::update("5656565656565656", [
+    "status" => "confirmed",
+    "senderCityCode" => "3550308",
+]);
+print_r($subscription);
+```
+
+### Cancel a PixPullSubscription
+
+The `reason` is sent as a query parameter on the DELETE request.
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$subscription = PixPullSubscription::cancel("5656565656565656", "accountClosed");
+print_r($subscription);
+```
+
+### Query PixPullSubscription logs
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$logs = PixPullSubscription\Log::query([
+    "limit" => 50,
+    "after" => "2026-01-01",
+    "before" => "2026-04-30",
+    "subscriptionIds" => ["5656565656565656"],
+]);
+
+foreach ($logs as $log) {
+    print_r($log);
+}
+```
+
+### Get a PixPullSubscription log
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$log = PixPullSubscription\Log::get("5155165527080960");
+print_r($log);
+```
+
+### Process inbound PixPullSubscription events
+
+```php
+use StarkInfra\PixPullSubscription;
+
+$subscription = PixPullSubscription::parse(
+    '{"bacenId": "RR2017032900000000000000003", ...}',
+    "MEUCIQC7FVhXdripx/aXg5yNLxmNoZlehpyvX3QYDXJ8o3PAZQIgVe1omKFh7Vd54ML4U1z7L+kpx+GHl+G2XLeFTLZeBJk="
+);
+print_r($subscription);
+```
+
+### Create PixPullRequests
+
+```php
+use StarkInfra\PixPullRequest;
+
+$requests = PixPullRequest::create([
+    new PixPullRequest([
+        "amount" => 11234,
+        "due" => "2026-04-15T12:00:00+00:00",
+        "endToEndId" => "E00002649202201172211u34srod19le",
+        "receiverAccountNumber" => "876543-2",
+        "receiverAccountType" => "checking",
+        "receiverBankCode" => "20018183",
+        "reconciliationId" => "cycle-202604",
+        "subscriptionId" => "5656565656565656",
+        "tags" => ["monthly"],
+    ]),
+]);
+
+foreach ($requests as $request) {
+    print_r($request);
+}
+```
+
+### Query PixPullRequests
+
+```php
+use StarkInfra\PixPullRequest;
+
+$requests = PixPullRequest::query([
+    "limit" => 10,
+    "status" => ["created", "active"],
+    "subscriptionIds" => ["5656565656565656"],
+]);
+
+foreach ($requests as $request) {
+    print_r($request);
+}
+```
+
+### Get a PixPullRequest
+
+```php
+use StarkInfra\PixPullRequest;
+
+$request = PixPullRequest::get("5656565656565656");
+print_r($request);
+```
+
+### Update a PixPullRequest
+
+When denying, `reason` is required.
+
+```php
+use StarkInfra\PixPullRequest;
+
+$request = PixPullRequest::update("5656565656565656", [
+    "status" => "denied",
+    "reason" => "senderAccountClosed",
+]);
+print_r($request);
+```
+
+### Cancel a PixPullRequest
+
+The `reason` is sent as a query parameter on the DELETE request.
+
+```php
+use StarkInfra\PixPullRequest;
+
+$request = PixPullRequest::cancel("5656565656565656", "senderUserRequested");
+print_r($request);
+```
+
+### Query PixPullRequest logs
+
+```php
+use StarkInfra\PixPullRequest;
+
+$logs = PixPullRequest\Log::query([
+    "limit" => 50,
+    "requestIds" => ["5656565656565656"],
+]);
+
+foreach ($logs as $log) {
+    print_r($log);
+}
+```
+
+### Get a PixPullRequest log
+
+```php
+use StarkInfra\PixPullRequest;
+
+$log = PixPullRequest\Log::get("5155165527080960");
+print_r($log);
+```
+
+### Create PixKeyHolmes
+
+You can open a PixKeyHolmes to investigate the registration status of a Pix Key in the
+Central Bank's DICT. The case is resolved asynchronously and reports back whether the key
+is registered:
+
+```php
+use StarkInfra\PixKeyHolmes;
+
+$holmes = PixKeyHolmes::create([
+    new PixKeyHolmes([
+        "keyId" => "+5511989898989",
+        "tags" => ["sherlock", "investigation"]
+    ]),
+    new PixKeyHolmes([
+        "keyId" => "valid@sandbox.com"
+    ]),
+]);
+
+foreach($holmes as $sherlock){
+    print_r($sherlock);
+}
+```
+
+**Note**: Instead of using PixKeyHolmes objects, you can also pass each element in dictionary format
+
+### Query PixKeyHolmes
+
+You can query multiple PixKeyHolmes according to filters.
+
+```php
+use StarkInfra\PixKeyHolmes;
+
+$holmes = PixKeyHolmes::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30",
+    "status" => ["solved"],
+    "tags" => ["sherlock", "investigation"],
+]);
+
+foreach($holmes as $sherlock){
+    print_r($sherlock);
+}
+```
+
+### Create a PixInternalTransactionReport
+
+You can report a transaction that happened internally, outside of the SPI, so it is reflected in the Central Bank's statements:
+
+```php
+use StarkInfra\PixInternalTransactionReport;
+use StarkInfra\Utils\EndToEndId;
+
+$reports = PixInternalTransactionReport::create([
+    new PixInternalTransactionReport([
+        "amount" => 1234,
+        "created" => "2026-06-16T17:23:53.980238+00:00",
+        "endToEndId" => EndToEndId::create("00000665"),
+        "method" => "manual",
+        "referenceType" => "request",
+        "senderAccountNumber" => "76543-8",
+        "senderBranchCode" => "2201",
+        "senderAccountType" => "checking",
+        "senderBankCode" => "00000665",
+        "senderTaxId" => "594.739.480-42",
+        "receiverAccountNumber" => "00000-1",
+        "receiverBranchCode" => "0001",
+        "receiverAccountType" => "checking",
+        "receiverBankCode" => "18236120",
+        "receiverTaxId" => "01234567890",
+        "receiverKeyId" => "+5511989898989",
+    ]),
+]);
+
+foreach($reports as $report){
+    print_r($report);
+}
+```
+
+**Note**: Instead of using PixInternalTransactionReport objects, you can also pass each element in dictionary format
+
+### Query PixInternalTransactionReports
+
+You can query multiple PixInternalTransactionReports according to filters.
+
+```php
+use StarkInfra\PixInternalTransactionReport;
+
+$reports = PixInternalTransactionReport::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30",
+    "status" => ["success", "failed"],
+    "ids" => ["5656565656565656", "4545454545454545"],
+]);
+
+foreach($reports as $report){
+    print_r($report);
+}
+```
+
+### Get a PixInternalTransactionReport
+
+After its creation, information on a PixInternalTransactionReport may be retrieved by its id.
+
+```php
+use StarkInfra\PixInternalTransactionReport;
+
+$report = PixInternalTransactionReport::get("5155966664310784");
+
+print_r($report);
+```
+
+### Query PixInternalTransactionReport logs
+
+You can query PixInternalTransactionReport Logs to better understand their life cycles.
+
+```php
+use StarkInfra\PixInternalTransactionReport;
+
+$logs = PixInternalTransactionReport\Log::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30",
+    "types" => ["success", "failed"],
+]);
+
+foreach($logs as $log){
+    print_r($log->id);
+}
+```
+
+### Get a PixInternalTransactionReport log
+
+You can also get a specific log by its id.
+
+```php
+use StarkInfra\PixInternalTransactionReport;
+
+$log = PixInternalTransactionReport\Log::get("5155165527080960");
+
+print_r($log);
+```
+
+## Ledger
+
+Ledgers are used to track the balance of a given amount by inserting LedgerTransactions to them.
+They can represent a bank account, a digital wallet, an inventory product, etc.
+
+### Create Ledgers
+
+Send a list of Ledger objects for creation in the Stark Infra API.
+
+```php
+use StarkInfra\Ledger;
+use StarkInfra\Ledger\Rule;
+
+$ledgers = Ledger::create([
+    new Ledger([
+        "externalId" => "my-internal-id-123456",
+        "tags" => ["account/123", "savings"],
+        "rules" => [
+            new Rule([
+                "key" => "minimumBalance",
+                "value" => 0
+            ])
+        ]
+    ])
+]);
+
+foreach ($ledgers as $ledger) {
+    print_r($ledger);
+}
+```
+
+### Query Ledgers
+
+You can query multiple Ledgers according to filters.
+
+```php
+use StarkInfra\Ledger;
+
+$ledgers = Ledger::query([
+    "after" => "2020-01-01",
+    "before" => "2020-03-01"
+]);
+
+foreach ($ledgers as $ledger) {
+    print_r($ledger);
+}
+```
+
+### Get a Ledger
+
+After its creation, information on a Ledger may be retrieved by its id.
+
+```php
+use StarkInfra\Ledger;
+
+$ledger = Ledger::get("5155165527080960");
+
+print_r($ledger);
+```
+
+### Update a Ledger
+
+Update a Ledger by passing its id to change its rules, tags or metadata.
+
+```php
+use StarkInfra\Ledger;
+
+$ledger = Ledger::update("5155165527080960", [
+    "tags" => ["account/123", "updated"]
+]);
+
+print_r($ledger);
+```
+
+### Query Ledger logs
+
+You can query Ledger logs to better understand Ledger life cycles.
+
+```php
+use StarkInfra\Ledger\Log;
+
+$logs = Log::query(["limit" => 50]);
+
+foreach ($logs as $log) {
+    print_r($log);
+}
+```
+
+### Get a Ledger log
+
+You can also get a specific log by its id.
+
+```php
+use StarkInfra\Ledger\Log;
+
+$log = Log::get("5155165527080960");
+
+print_r($log);
+```
+
+### Create LedgerTransactions
+
+Send a list of LedgerTransaction objects to move amounts in and out of a Ledger.
+
+```php
+use StarkInfra\LedgerTransaction;
+
+$transactions = LedgerTransaction::create([
+    new LedgerTransaction([
+        "amount" => 11234,
+        "ledgerId" => "5656565656565656",
+        "externalId" => "my-internal-id-123456",
+        "source" => "bank-transfer/123",
+        "tags" => ["transfer/123", "savings"]
+    ])
+]);
+
+foreach ($transactions as $transaction) {
+    print_r($transaction);
+}
+```
+
+### Query LedgerTransactions
+
+You can query multiple LedgerTransactions according to filters.
+
+```php
+use StarkInfra\LedgerTransaction;
+
+$transactions = LedgerTransaction::query([
+    "ledgerId" => "5656565656565656",
+    "after" => "2020-01-01",
+    "before" => "2020-03-01"
+]);
+
+foreach ($transactions as $transaction) {
+    print_r($transaction);
+}
+```
+
+### Get a LedgerTransaction
+
+After its creation, information on a LedgerTransaction may be retrieved by its id.
+
+```php
+use StarkInfra\LedgerTransaction;
+
+$transaction = LedgerTransaction::get("5155165527080960");
+
+print_r($transaction);
+```
+
 ## Lending
 
 If you want to establish a lending operation, you can use Stark Infra to
@@ -2666,6 +3303,7 @@ use StarkInfra\CreditNote;
 use StarkInfra\CreditSigner;
 use StarkInfra\CreditNote\Invoice;
 use StarkInfra\CreditNote\Transfer;
+use StarkInfra\CreditNote\Rule;
 
 $notes = CreditNote::create([
     new CreditNote([
@@ -2695,6 +3333,12 @@ $notes = CreditNote::create([
                 "contact" =>  "jamie.lannister@gmail.com",
                 "method" => "link",
                 "name" => "Jamie Lannister",
+            ])
+        ],
+        "rules" => [
+            new Rule([
+                "key" => "invoiceCreationMode",
+                "value" => "scheduled"
             ])
         ],
         "rebateAmount" => 0,
@@ -3204,6 +3848,216 @@ $log = IndividualDocument\Log::get("5155165527080960");
 print_r($log);
 ```
 
+### Create BusinessIdentities
+
+You can create a BusinessIdentity to validate a document of a legal entity
+
+```php
+use StarkInfra\BusinessIdentity;
+
+$identities = BusinessIdentity::create([
+    new BusinessIdentity([
+        "taxId" => "20.018.183/0001-80",
+        "tags" =>["breaking", "bad"]
+    ]);
+]);
+
+foreach($identities as $identity){
+    print_r($identity);
+}
+```
+
+**Note**: Instead of using BusinessIdentity objects, you can also pass each element in dictionary format
+
+### Query BusinessIdentities
+
+You can query multiple business identities according to filters.
+
+```php
+use StarkInfra\BusinessIdentity;
+
+$identities = BusinessIdentity::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30",
+    "status" => "success",
+    "tags" =>["breaking", "bad"]
+]);
+
+foreach($identities as $identity){
+    print_r($identity);
+}
+```
+
+### Get a BusinessIdentity
+
+After its creation, information on a business identity may be retrieved by its id.
+
+```php
+use StarkInfra\BusinessIdentity;
+
+$identity = BusinessIdentity::get("5155165527080960");
+
+print_r($identity);
+```
+
+### Update a BusinessIdentity
+
+You can update a specific identity status to "processing" for send it to validation.
+
+```php
+use StarkInfra\BusinessIdentity;
+
+$identity = BusinessIdentity::update(
+    "5155165527080960",
+    ["status" => "processing"]
+)
+
+print_r($identity)
+```
+
+**Note**: Before sending your business identity to validation by patching its status, you must send all the required attachments using the create method of the BusinessAttachment resource. Note that you must reference the business identity in the create method of the BusinessAttachment resource by its id.
+
+
+### Cancel a BusinessIdentity
+
+You can cancel a business identity before updating its status to processing.
+
+```php
+use StarkInfra\BusinessIdentity;
+
+$identity = BusinessIdentity::cancel("5155165527080960");
+
+print_r($identity);
+```
+
+### Query BusinessIdentity logs
+
+You can query business identity logs to better understand business identity life cycles.
+
+```php
+use StarkInfra\BusinessIdentity\Log;
+
+$logs = BusinessIdentity\Log::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30"
+]);
+
+foreach($logs as $log){
+    print_r($log);
+}
+```
+
+### Get a BusinessIdentity log
+
+You can also get a specific log by its id.
+
+```php
+use StarkInfra\BusinessIdentity\Log;
+
+$log = BusinessIdentity\Log::get("5155165527080960");
+
+print_r($log);
+```
+
+### Create BusinessAttachments
+
+You can create a business attachment to attach documents to a specific business Identity.
+You must reference the desired business identity by its id.
+
+```php
+$attachments = BusinessAttachment::create([
+    new BusinessAttachment([
+        "name" => "articles-of-incorporation.png",
+        "content" => "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+        "contentType" => "image/png",
+        "businessIdentityId" => "5155165527080960",
+        "tags" => ["breaking", "bad"]
+    ]);
+]);
+
+foreach($attachments as $attachment){
+    print_r($attachment);
+}
+```
+
+**Note**: Instead of using BusinessAttachment objects, you can also pass each element in dictionary format
+
+### Query BusinessAttachments
+
+You can query multiple business attachments according to filters.
+
+```php
+use StarkInfra\BusinessAttachment;
+
+$attachments = BusinessAttachment::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30",
+    "status" => "approved",
+    "tags" => ["breaking", "bad"]
+]);
+
+foreach($attachments as $attachment){
+    print_r($attachment);
+}
+```
+
+### Get a BusinessAttachment
+
+After its creation, information on a business attachment may be retrieved by its id.
+
+```php
+use StarkInfra\BusinessAttachment;
+
+$attachment = BusinessAttachment::get("5155165527080960", ["expand" => ["content"]]);
+
+print_r($attachment);
+```
+
+### Cancel a BusinessAttachment
+
+You can cancel a business attachment by its id.
+
+```php
+use StarkInfra\BusinessAttachment;
+
+$attachment = BusinessAttachment::cancel("5155165527080960");
+
+print_r($attachment);
+```
+
+### Query BusinessAttachment logs
+
+You can query business attachment logs to better understand business attachment life cycles.
+
+```php
+use StarkInfra\BusinessAttachment\Log;
+
+$logs = BusinessAttachment\Log::query([
+    "limit" => 10,
+    "after" => "2020-04-01",
+    "before" => "2020-04-30"
+]);
+
+foreach($logs as $log){
+    print_r($log);
+}
+```
+
+### Get a BusinessAttachment log
+
+You can also get a specific log by its id.
+
+```php
+use StarkInfra\BusinessAttachment\Log;
+
+$log = BusinessAttachment\Log::get("5155165527080960");
+
+print_r($log);
+```
+
 ### Create IndividualAccountRequests
 
 You can create an IndividualAccountRequest to open a Stark Infra account for a natural person. The approval flow runs asynchronously.
@@ -3429,7 +4283,7 @@ $webhook = Webhook::create(
     new Webhook(
         "url" => "https://webhook.site/",
         "subscriptions" =>[
-            "credit-note"
+            "credit-note", "business-identity",
             "issuing-card", "issuing-invoice", "issuing-purchase",
             "pix-request.in", "pix-request.out", "pix-reversal.in", "pix-reversal.out", "pix-claim", "pix-key", "pix-infraction", "pix-chargeback"
         ]
@@ -3511,6 +4365,8 @@ if ($event->subscription == "pix-request.in"){
     print_r($event->log->invoice);
 } elseif ($event->subscription == "issuing-purchase"){
     print_r($event->log->purchase);
+} elseif ($event->subscription == "business-identity"){
+    print_r($event->log->identity);
 } 
 ```
 

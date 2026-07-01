@@ -14,6 +14,21 @@ Given a version number MAJOR.MINOR.PATCH, increment:
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-30
+### Added
+- BusinessIdentity and BusinessAttachment resources
+- PixPullSubscription resource
+- PixPullRequest resource
+- IssuingStockRule resource
+- PixFraud.Log resource
+- PixKeyHolmes resource
+- PixInternalTransactionReport resource
+- PixInternalTransactionReport.Log resource
+- priority and reason attributes to PixRequest resource
+- rules and debtorWorkspaceId parameters to CreditNote resource
+- Ledger resource
+- LedgerLog resource
+- LedgerTransaction resource
 
 ## [0.16.0] - 2026-06-01
 ### Added

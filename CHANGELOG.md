@@ -52,6 +52,12 @@ Given a version number MAJOR.MINOR.PATCH, increment:
 ### Added
 - subscription and due attribute to BrcodePreview resource
 
+## [0.13.2] - 2025-05-01
+### Added
+- SimulatePurchaseAuthorization resource
+- Compatibility to PHP 8.2 and 8.3
+- updated to core-php version 0.5.0
+
 ## [0.13.1] - 2025-04-17
 ### Added
 - status param check in construction function

@@ -86,6 +86,23 @@ class Rest
         );
     }
 
+    public static function postSubResource($user, $resource, $id, $subresource, $entity, $options = null)
+    {
+        return \StarkCore\Utils\Rest::postSubResource(
+            self::getSdkVersion(),
+            self::getHost(),
+            self::getApiVersion(),
+            Settings::getUser($user),
+            $resource,
+            $id,
+            $subresource,
+            $entity,
+            Settings::getLanguage(),
+            Settings::getTimeout(),
+            $options
+        );
+    }
+
     public static function post($user, $resource, $entities, $query=null)
     {
         return \StarkCore\Utils\Rest::post(

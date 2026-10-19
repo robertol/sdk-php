@@ -1,7 +1,9 @@
 <?php
 
 namespace StarkInfra\Utils;
+
 use StarkInfra\Settings;
+use StarkCore\Utils\Checks;
 use StarkCore\Utils\StarkHost;
 
 
@@ -13,152 +15,247 @@ class Rest
 
     public static function getPage($user, $resource, array $query = [])
     {
-        return \StarkCore\Utils\Rest::getPage(
-            self::getSdkVersion(),
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
+            "GET",
+            API::endpoint($resource["name"]),
+            null,
+            $query,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $query
-        );
+            Settings::getTimeout()
+        )->json();
+
+        $entities = [];
+        foreach ($json[API::lastNamePlural($resource["name"])] as $entity) {
+            $entities[] = API::fromApiJson($resource["maker"], $entity);
+        }
+
+        return [$entities, $json["cursor"]];
     }
 
     public static function getList($user, $resource, array $query = [])
     {
-        return \StarkCore\Utils\Rest::getList(
-            self::getSdkVersion(), 
-            self::getHost(),
-            self::getApiVersion(),
-            Settings::getUser($user),
-            $resource,
-            Settings::getLanguage(),
-            Settings::getTimeout(),
-            $query
-        );
+        $limit = Checks::checkParam($query, "limit");
+        $query["limit"] = is_null($limit) ? null : min($limit, 100);
+
+        while (true) {
+            $json = Request::fetch(
+                self::getHost(),
+                self::getSdkVersion(),
+                Settings::getUser($user),
+                "GET",
+                API::endpoint($resource["name"]),
+                null,
+                $query,
+                self::getApiVersion(),
+                Settings::getLanguage(),
+                Settings::getTimeout()
+            )->json();
+
+            $entities = $json[API::lastNamePlural($resource["name"])];
+
+            foreach ($entities as $entity) {
+                yield API::fromApiJson($resource["maker"], $entity);
+            }
+
+            if (!is_null($limit)) {
+                $limit -= 100;
+                $query["limit"] = min($limit, 100);
+            }
+
+            if (!array_key_exists("cursor", $json)) {
+                break;
+            }
+
+            $cursor = $json["cursor"];
+            $query["cursor"] = $cursor;
+            if (empty($cursor) || is_null($cursor) || (!is_null($limit) && $limit <= 0)) {
+                break;
+            }
+        }
     }
 
-    public static function getId($user, $resource, $id, $query=[])
+    public static function getId($user, $resource, $id, $query = [])
     {
-        return \StarkCore\Utils\Rest::getId(
-            self::getSdkVersion(),
+        $id = Checks::checkId($id);
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $id,
+            "GET",
+            API::endpoint($resource["name"]) . "/" . $id,
+            null,
+            $query,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $query
-        );
+            Settings::getTimeout()
+        )->json();
+
+        $entity = $json[API::lastName($resource["name"])];
+
+        return API::fromApiJson($resource["maker"], $entity);
     }
 
     public static function getContent($user, $resource, $id, $subresourceName, $options = null)
     {
-        return \StarkCore\Utils\Rest::getContent(
-            self::getSdkVersion(),
+        $id = Checks::checkId($id);
+        $options = API::castJsonToApiFormat($options);
+        $path = API::endpoint($resource["name"]) . "/" . $id . "/" . $subresourceName;
+
+        return Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $id,
-            $subresourceName,
+            "GET",
+            $path,
+            null,
+            $options,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $options
-        );
+            Settings::getTimeout()
+        )->content;
     }
 
     public static function getSubresource($user, $resource, $id, $subresource, $options = null)
     {
-        return \StarkCore\Utils\Rest::getSubresource(
-            self::getSdkVersion(),
+        $id = Checks::checkId($id);
+        $options = API::castJsonToApiFormat($options);
+        $path = API::endpoint($resource["name"]) . "/" . $id . "/" . API::endpoint($subresource["name"]);
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $id,
-            $subresource,
+            "GET",
+            $path,
+            null,
+            $options,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $options
-        );
+            Settings::getTimeout()
+        )->json();
+
+        $entity = $json[API::lastName($subresource["name"])];
+
+        return API::fromApiJson($subresource["maker"], $entity);
     }
 
     public static function postSubResource($user, $resource, $id, $subresource, $entity, $options = null)
     {
-        return \StarkCore\Utils\Rest::postSubResource(
-            self::getSdkVersion(),
+        $id = Checks::checkId($id);
+        $payload = API::apiJson($entity, $subresource["name"]);
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $id,
-            $subresource,
-            $entity,
+            "POST",
+            API::endpoint($resource["name"]) . "/" . $id . "/" . API::endpoint($subresource["name"]),
+            $payload,
+            null,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $options
-        );
+            Settings::getTimeout()
+        )->json();
+
+        $entityJson = $json[API::lastName($subresource["name"])];
+
+        return API::fromApiJson($subresource["maker"], $entityJson);
     }
 
-    public static function post($user, $resource, $entities, $query=null)
+    public static function post($user, $resource, $entities, $query = null)
     {
-        return \StarkCore\Utils\Rest::post(
-            self::getSdkVersion(),
+        $entitiesJson = [];
+        foreach ($entities as $entity) {
+            $entitiesJson[] = API::apiJson($entity, $resource["name"]);
+        }
+        $payload = [
+            API::lastNamePlural($resource["name"]) => $entitiesJson,
+        ];
+
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $entities,
+            "POST",
+            API::endpoint($resource["name"]),
+            $payload,
+            $query,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $query
-        );
+            Settings::getTimeout()
+        )->json();
+
+        $retrievedEntities = [];
+        foreach ($json[API::lastNamePlural($resource["name"])] as $entity) {
+            $retrievedEntities[] = API::fromApiJson($resource["maker"], $entity);
+        }
+
+        return $retrievedEntities;
     }
 
     public static function postSingle($user, $resource, $entity)
     {
-        return \StarkCore\Utils\Rest::postSingle(
-            self::getSdkVersion(),
+        $payload = API::apiJson($entity);
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $entity,
+            "POST",
+            API::endpoint($resource["name"]),
+            $payload,
+            null,
+            self::getApiVersion(),
             Settings::getLanguage(),
             Settings::getTimeout()
-        );
+        )->json();
+
+        $entityJson = $json[API::lastName($resource["name"])];
+
+        return API::fromApiJson($resource["maker"], $entityJson);
     }
 
     public static function deleteId($user, $resource, $id)
     {
-        return \StarkCore\Utils\Rest::deleteId(
-            self::getSdkVersion(),
+        $id = Checks::checkId($id);
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $id,
+            "DELETE",
+            API::endpoint($resource["name"]) . "/" . $id,
+            null,
+            null,
+            self::getApiVersion(),
             Settings::getLanguage(),
             Settings::getTimeout()
-        );
+        )->json();
+
+        $entity = $json[API::lastName($resource["name"])];
+
+        return API::fromApiJson($resource["maker"], $entity);
     }
 
     public static function patchId($user, $resource, $id, $payload = [])
     {
-        return \StarkCore\Utils\Rest::patchId(
-            self::getSdkVersion(),
+        $id = Checks::checkId($id);
+        $json = Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            $resource,
-            $id,
+            "PATCH",
+            API::endpoint($resource["name"]) . "/" . $id,
+            API::castJsonToApiFormat($payload, $resource["name"]),
+            null,
+            self::getApiVersion(),
             Settings::getLanguage(),
-            Settings::getTimeout(),
-            $payload
-        );
+            Settings::getTimeout()
+        )->json();
+
+        $entity = $json[API::lastName($resource["name"])];
+
+        return API::fromApiJson($resource["maker"], $entity);
     }
 
     public static function getSdkVersion()
@@ -175,19 +272,20 @@ class Rest
     {
         return self::host;
     }
-    
+
     public static function postRaw($user, $path, $payload, $prefix = null, $throwError = true, $query = null)
     {
-        return \StarkCore\Utils\Rest::postRaw(
-            self::getSdkVersion(),
+        return Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            Settings::getLanguage(),
-            Settings::getTimeout(),
+            "POST",
             $path,
             $payload,
             $query,
+            self::getApiVersion(),
+            Settings::getLanguage(),
+            Settings::getTimeout(),
             $prefix,
             $throwError
         );
@@ -195,16 +293,17 @@ class Rest
 
     public static function getRaw($user, $path, $query = null, $prefix = null, $throwError = true, $payload = null)
     {
-        return \StarkCore\Utils\Rest::getRaw(
-            self::getSdkVersion(),
+        return Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            Settings::getLanguage(),
-            Settings::getTimeout(),
+            "GET",
             $path,
             $payload,
             $query,
+            self::getApiVersion(),
+            Settings::getLanguage(),
+            Settings::getTimeout(),
             $prefix,
             $throwError
         );
@@ -212,16 +311,17 @@ class Rest
 
     public static function patchRaw($user, $path, $payload, $prefix = null, $throwError = true, $query = null)
     {
-        return \StarkCore\Utils\Rest::patchRaw(
-            self::getSdkVersion(),
+        return Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            Settings::getLanguage(),
-            Settings::getTimeout(),
+            "PATCH",
             $path,
             $payload,
             $query,
+            self::getApiVersion(),
+            Settings::getLanguage(),
+            Settings::getTimeout(),
             $prefix,
             $throwError
         );
@@ -229,16 +329,17 @@ class Rest
 
     public static function putRaw($user, $path, $payload, $prefix = null, $throwError = true, $query = null)
     {
-        return \StarkCore\Utils\Rest::putRaw(
-            self::getSdkVersion(),
+        return Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            Settings::getLanguage(),
-            Settings::getTimeout(),
+            "PUT",
             $path,
             $payload,
             $query,
+            self::getApiVersion(),
+            Settings::getLanguage(),
+            Settings::getTimeout(),
             $prefix,
             $throwError
         );
@@ -246,16 +347,17 @@ class Rest
 
     public static function deleteRaw($user, $path, $payload, $prefix = null, $throwError = true, $query = null)
     {
-        return \StarkCore\Utils\Rest::deleteRaw(
-            self::getSdkVersion(),
+        return Request::fetch(
             self::getHost(),
-            self::getApiVersion(),
+            self::getSdkVersion(),
             Settings::getUser($user),
-            Settings::getLanguage(),
-            Settings::getTimeout(),
+            "DELETE",
             $path,
             $payload,
             $query,
+            self::getApiVersion(),
+            Settings::getLanguage(),
+            Settings::getTimeout(),
             $prefix,
             $throwError
         );

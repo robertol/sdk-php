@@ -1,5 +1,5 @@
 {
-    "name": "starkinfra/sdk",
+    "name": "robertol/sdk-stark",
     "version": "0.17.0",
     "type": "library",
     "description": "SDK to facilitate PHP integrations with the Stark Infra API",
@@ -15,7 +15,8 @@
     ],
     "require": {
         "php": ">=7.1 <9.0",
-        "starkinfra/core": "^0.5.0",
+        "starkinfra/core": "^0.7.0",
+        "ext-curl": "*",
         "ext-json": "*"
     },
     "keywords": [

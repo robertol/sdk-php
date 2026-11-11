@@ -35,7 +35,7 @@
             "StarkInfra\\": "src/",
             "EllipticCurve\\": "vendor/starkbank/ecdsa/"
         },
-        "classmap": ["src/"]
+        "classmap": ["src/", "tests/"]
     },
     "scripts": {
         "check-style": "phpcs src tests",

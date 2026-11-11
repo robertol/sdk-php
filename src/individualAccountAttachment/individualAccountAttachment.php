@@ -84,6 +84,8 @@ class IndividualAccountAttachment extends Resource
             if ($attachment->contentType != null){
                 $attachment->content = "data:" . $attachment->contentType . ";base64," . base64_encode($attachment->content);
                 $attachment->contentType = null;
+            } elseif (!str_starts_with((string)$attachment->content, "data:")) {
+                $attachment->content = "data:application/octet-stream;base64," . base64_encode($attachment->content);
             }
         }
         return Rest::post($user, IndividualAccountAttachment::resource(), $attachments);
